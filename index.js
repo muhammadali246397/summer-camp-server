@@ -3,10 +3,27 @@ const app = express();
 const cors = require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
+const jwt = require('jsonwebtoken');
 const port = process.env.POST || 5000;
 
 app.use(cors());
 app.use(express.json())
+
+const verifyJWT = (req,res,next) => {
+  const authorization = req.headers.authorization;
+  if(!authorization){
+    return res.status(403).send({message:'unauthorization access'})
+  }
+  const token = authorization.split(' ')[1];
+  jwt.verify(token,process.env.ACCESS_TOKEN,(error,decoded) => {
+    if(error){
+      return res.status(403).send({message:'unauthorization access'})
+    }
+    req.decoded = decoded;
+    next();
+
+  })
+}
 
 app.get('/',(req,res) => {
     res.send('assignment twelve is runing')
@@ -32,6 +49,14 @@ async function run() {
     const classCollection = client.db('drawing-art').collection('classesCollection')
     const addClsCollection = client.db('drawing-art').collection('addClsCollecton')
     const userCollection = client.db('drawing-art').collection('userCollection')
+
+    app.post('/jwt',(req,res) => {
+      const user = req.body;
+     const token = jwt.sign(user,process.env.ACCESS_TOKEN, { expiresIn: '1h' })
+      res.send(token)
+    })
+
+    console.log(process.env.ACCESS_TOKEN)
 
     app.post('/users', async(req,res) => {
       const user = req.body;
@@ -82,9 +107,9 @@ async function run() {
 
     app.post('/class',async(req,res) => {
       const data = req.body;
-      if(data.status === 'pending'){
-        return res.send({message:'this class is pending'})
-      }
+      // if(data.status === 'pending'){
+      //   return res.send({message:'this class is pending'})
+      // }
       const result = await classCollection.insertOne(data);
       res.send(result)
     })
@@ -103,10 +128,14 @@ async function run() {
 
 
 
-    app.get('/myclass',async(req,res) => {
+    app.get('/myclass',verifyJWT,async(req,res) => {
       const email = req.query.email;
       if(!email){
         res.send([])
+      }
+      const decodedEmail = req.decoded.email
+      if(decodedEmail !== email){
+        return res.status(403).send({message:'forbiden access'})
       }
       const query = {email : email}
       const result = await classCollection.find(query).toArray()
