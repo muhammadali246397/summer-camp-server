@@ -57,7 +57,7 @@ async function run() {
       res.send(token)
     })
 
-    console.log(process.env.ACCESS_TOKEN)
+  
 
     app.post('/users', async(req,res) => {
       const user = req.body;
@@ -70,7 +70,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/users',async(req,res) => {
+    app.get('/users',verifyJWT,async(req,res) => {
       const result = await userCollection.find().toArray();
       res.send(result)
     })
@@ -111,7 +111,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/postclass', async(req,res) => {
+    app.get('/postclass',verifyJWT, async(req,res) => {
       const result = await postclassCollection.find().toArray();
       res.send(result)    
       }
@@ -120,18 +120,14 @@ async function run() {
     
     app.get('/postclasses',async(req,res) => {
       const status = req.query.status;
-      console.log(status)
-      // const query = {status : status}
+      const result = await postclassCollection.find({status:'approved'}).limit(6).sort({available:1}).toArray()
+      res.send(result)
+      })
+
+    app.get('/postclassespage',async(req,res) => {
+      const status = req.query.status;
       const result = await postclassCollection.find({status:'approved'}).toArray()
       res.send(result)
-      // if(status === "approved"){
-      //   const query = {status:true}
-      //   const result = await postclassCollection.find(query).toArray()
-      //   res.send(result)
-      // }else{
-      //   res.send('not approved class')
-      // }
- 
       })
 
     app.patch('/postclassapprove/:id',async(req,res) => {
@@ -158,7 +154,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/allclass',async(req,res) => {
+    app.get('/allclass',verifyJWT,async(req,res) => {
       const result = await classCollection.find().toArray()
       res.send(result)
     })
