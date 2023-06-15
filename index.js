@@ -47,6 +47,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const classCollection = client.db('drawing-art').collection('classesCollection')
+    const postclassCollection = client.db('drawing-art').collection('postclassesCollection')
     const addClsCollection = client.db('drawing-art').collection('addClsCollecton')
     const userCollection = client.db('drawing-art').collection('userCollection')
 
@@ -100,17 +101,60 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/class',async(req,res) => {
-      const result = await classCollection.find().limit(6).sort({available:1}).toArray()
+     
+      
+  
+
+    app.post('/postclass',async(req,res) => {
+      const data = req.body;
+      const result = await postclassCollection.insertOne(data);
       res.send(result)
     })
 
-    app.post('/class',async(req,res) => {
-      const data = req.body;
-      // if(data.status === 'pending'){
-      //   return res.send({message:'this class is pending'})
+    app.get('/postclass', async(req,res) => {
+      const result = await postclassCollection.find().toArray();
+      res.send(result)    
+      }
+    )
+
+    
+    app.get('/postclasses',async(req,res) => {
+      const status = req.query.status;
+      console.log(status)
+      // const query = {status : status}
+      const result = await postclassCollection.find({status:'approved'}).toArray()
+      res.send(result)
+      // if(status === "approved"){
+      //   const query = {status:true}
+      //   const result = await postclassCollection.find(query).toArray()
+      //   res.send(result)
+      // }else{
+      //   res.send('not approved class')
       // }
-      const result = await classCollection.insertOne(data);
+ 
+      })
+
+    app.patch('/postclassapprove/:id',async(req,res) => {
+      const id = req.params.id;
+      const filter = {_id : new ObjectId(id)}
+      const updateDoc = {
+        $set:{
+          status:'approved'
+        }
+      }
+      const result = await postclassCollection.updateOne(filter,updateDoc)
+      res.send(result)
+    })
+
+    app.patch('/postclassdained/:id',async(req,res) => {
+      const id = req.params.id;
+      const filter = {_id : new ObjectId(id)}
+      const updateDoc = {
+        $set:{
+          status:'deined'
+        }
+      }
+      const result = await postclassCollection.updateOne(filter,updateDoc)
       res.send(result)
     })
 
@@ -138,7 +182,7 @@ async function run() {
         return res.status(403).send({message:'forbiden access'})
       }
       const query = {email : email}
-      const result = await classCollection.find(query).toArray()
+      const result = await postclassCollection.find(query).toArray()
       res.send(result)
     })
 
@@ -158,6 +202,30 @@ async function run() {
     const query = {_id: new ObjectId(id)}
     const result = await addClsCollection.deleteOne(query)
     res.send(result)
+  })
+
+  app.get('/users/checkadmin/:email',verifyJWT, async(req,res) => {
+    const email = req.params.email;
+    if(req.decoded.email !== email){
+      return res.send({message:'unauthorized access'})
+    }
+    const query ={userEmail : email}
+    const user = await userCollection.findOne(query);
+    const result = {admin : user?.role === 'admin'}
+    res.send(result)
+
+  })
+  
+  app.get('/users/checkinstructor/:email',verifyJWT, async(req,res) => {
+    const email = req.params.email;
+    if(req.decoded.email !== email){
+      return res.send({message:'unauthorized access'})
+    }
+    const query ={userEmail : email}
+    const user = await userCollection.findOne(query);
+    const result = {instructor : user?.role === 'instructor'}
+    res.send(result)
+
   })
 
 
