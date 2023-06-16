@@ -6,6 +6,8 @@ require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const port = process.env.POST || 5000;
 
+// middelware
+
 app.use(cors());
 app.use(express.json())
 
@@ -25,13 +27,11 @@ const verifyJWT = (req,res,next) => {
   })
 }
 
+// server code runing 
+
 app.get('/',(req,res) => {
     res.send('assignment twelve is runing')
 })
-
-
-
-
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.rfaan6v.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -50,6 +50,8 @@ async function run() {
     const postclassCollection = client.db('drawing-art').collection('postclassesCollection')
     const addClsCollection = client.db('drawing-art').collection('addClsCollecton')
     const userCollection = client.db('drawing-art').collection('userCollection')
+
+    // create jwt token
 
     app.post('/jwt',(req,res) => {
       const user = req.body;
@@ -163,16 +165,12 @@ async function run() {
       const result = await classCollection.find().toArray()
       res.send(result)
     })
-
     app.post('/addcls',async (req,res) => {
       const cls = req.body;
       const result = await addClsCollection.insertOne(cls)
       res.send(result)
 
     })
-
-
-
     app.get('/myclass',verifyJWT,async(req,res) => {
       const email = req.query.email;
       if(!email){
@@ -217,7 +215,17 @@ async function run() {
 
   })
   
- 
+  app.get('/users/checkinstructor/:email',verifyJWT, async(req,res) => {
+    const email = req.params.email;
+    if(req.decoded.email !== email){
+      return res.send({message:'unauthorized access'})
+    }
+    const query ={userEmail : email}
+    const user = await userCollection.findOne(query);
+    const result = {instructor : user?.role === 'instructor'}
+    res.send(result)
+
+  })
 
 
 
