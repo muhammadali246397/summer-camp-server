@@ -120,8 +120,13 @@ async function run() {
     
     app.get('/postclasses',async(req,res) => {
       const status = req.query.status;
-      const result = await postclassCollection.find({status:'approved'}).limit(6).sort({available:1}).toArray()
-      res.send(result)
+      const result = await postclassCollection .find({ status: 'approved' })
+      .sort({ available: 1 })
+      .limit(6)
+      .toArray();
+      const sortedResult = result.sort((a, b) => a.available - b.available);
+
+      res.send(sortedResult);
       })
 
     app.get('/postclassespage',async(req,res) => {
@@ -212,17 +217,7 @@ async function run() {
 
   })
   
-  app.get('/users/checkinstructor/:email',verifyJWT, async(req,res) => {
-    const email = req.params.email;
-    if(req.decoded.email !== email){
-      return res.send({message:'unauthorized access'})
-    }
-    const query ={userEmail : email}
-    const user = await userCollection.findOne(query);
-    const result = {instructor : user?.role === 'instructor'}
-    res.send(result)
-
-  })
+ 
 
 
 
